@@ -1185,12 +1185,6 @@ function M.open_classfile(fname)
   vim.bo[buf].buftype = 'nofile'
   -- This triggers FileType event which should fire up the lsp client if not already running
   vim.bo[buf].filetype = 'java'
-  local timeout_ms = M.settings.jdt_uri_timeout_ms
-  vim.wait(timeout_ms, function()
-    return next(get_clients({ name = "jdtls", bufnr = buf })) ~= nil
-  end)
-  local client = get_clients({ name = "jdtls", bufnr = buf })[1]
-  assert(client, 'Must have a `jdtls` client to load class file or jdt uri')
 
   local content
   local function handler(err, result)
@@ -1202,6 +1196,7 @@ function M.open_classfile(fname)
     vim.bo[buf].modifiable = false
   end
 
+  local timeout_ms = M.settings.jdt_uri_timeout_ms
   if use_cmd then
     local command = {
       command = "java.decompile",
@@ -1209,6 +1204,11 @@ function M.open_classfile(fname)
     }
     execute_command(command, handler)
   else
+    vim.wait(timeout_ms, function()
+      return next(get_clients({ name = "jdtls", bufnr = buf })) ~= nil
+    end)
+    local client = get_clients({ name = "jdtls", bufnr = buf })[1]
+    assert(client, 'Must have a `jdtls` client to load class file or jdt uri')
     local params = {
       uri = uri
     }
